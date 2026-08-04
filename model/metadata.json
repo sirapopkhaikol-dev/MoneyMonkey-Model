@@ -1,0 +1,13 @@
+{
+    "dataset_version": "2026-08-05",
+    "time_step": 1,
+    "feature_names": [
+        "inflation_change",
+        "current_account"
+    ],
+    "epochs": 100,
+    "batch_size": 5,
+    "learning_rate": 0.001,
+    "test_size": 0.3,
+    "random_state": 42
+}
