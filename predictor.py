@@ -43,8 +43,18 @@ class Predictor:
 
         return (inflation_change_data, current_account_data, combined_data)
 
+    MAX_FORECAST_YEARS = 150
 
-    def forecast_future(self, n_years, noise_std=0.5):
+    def forecast_future(
+        self, 
+        n_years : int, 
+        noise_std : float = 0.5
+    ) -> list[dict] :
+
+        # ตรวจสอบว่าค่า n_years
+        if n_years < 1 or n_years > self.MAX_FORECAST_YEARS:
+            raise ValueError(f"n_years ต้องอยู่ระหว่าง 1 ถึง {self.MAX_FORECAST_YEARS}")
+        
         future_predictions = []
 
         # เริ่มจากข้อมูลล่าสุด
@@ -64,26 +74,33 @@ class Predictor:
             next_year += volatility  # ผสมผลคาดการณ์กับความผันผวน
 
             # เก็บผลการคาดการณ์
-            future_predictions.append(next_year)
+            future_predictions.append(float(next_year))
             
             # ปรับ last_data เพื่อใช้ในการคาดการณ์ปีถัดไป
-            next_current_account = self.current_account_data[len(self.inflation_change_data) + i] if len(self.inflation_change_data) + i < len(self.current_account_data) else next_year * 10
-            next_data = np.append(last_data[1:], [[next_year, next_current_account]], axis=0)
+            next_current_account = self.current_account_data[len(self.inflation_change_data) + i] if len(self.inflation_change_data) + i < len(self.current_account_data) else float(next_year) * 10
+            next_data = np.append(last_data[1:], [[float(next_year), float(next_current_account)]], axis=0)
             last_data = next_data
 
-        return [
-            {
-                "year": i + 1,
-                "inflation_change": prediction
-            }
-            for i, prediction in enumerate(future_predictions)
-        ]
+        return future_predictions
 
 
-ref = Predictor()
-
-results = ref.forecast_future(n_years=50)
-
-print("Future Inflation Change Predictions for the Next 50 Years:", results)
-# for result in results:
-#     print(f"Year {result['year']}: {result['inflation_change']:.2f}%")
+    def calculate_future_value(
+        self, 
+        initial_amount: float, 
+        future_predictions: list[float]
+    ) -> list[dict]:
+        
+        # คำนวณเงินหลังจากการบวกเงินเฟ้อในแต่ละปี
+        amount = initial_amount
+        result = []  # เพื่อเก็บจำนวนเงินของแต่ละปี
+    
+        for year, inflat_rate in enumerate(future_predictions, start=1):
+            inflat_rate = inflat_rate / 100  # เปลี่ยนจาก % เป็นทศนิยม
+            amount += amount*inflat_rate # บวกเปอร์เซ็นต์เงินเฟ้อในปีนั้น
+            result.append({
+                'year': year,
+                'inflation_rate': inflat_rate,
+                'amount': round(amount,2) # ปัดเศษให้เหลือ 2 ตำแหน่ง
+            })
+        
+        return result
